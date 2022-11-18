@@ -21,6 +21,8 @@ public final class MainRDFHandler extends AbstractRDFHandler {
 	
 	Map<String,Integer > Dictionnary = new HashMap<String,Integer>();
 	
+	 
+	
 	ArrayList<ArrayList<Integer>> SPO = new ArrayList<ArrayList<Integer>>();
 	ArrayList<ArrayList<Integer>> POS = new ArrayList<ArrayList<Integer>>();
 	ArrayList<ArrayList<Integer>> OSP = new ArrayList<ArrayList<Integer>>();
@@ -52,20 +54,26 @@ public final class MainRDFHandler extends AbstractRDFHandler {
 			cmpt++;
 			Dictionnary.put(st.getSubject().toString(), cmpt  );
 		}
+		
 		subject = Dictionnary.get(st.getSubject().toString());
 		
 		
 		
-		cmpt++;
+		if(Dictionnary.get(st.getPredicate().toString()) == null) {
+			cmpt++;
+			Dictionnary.put(st.getPredicate().toString(), cmpt  );
+		}
 		
-		Dictionnary.put( st.getPredicate().toString() ,cmpt);
-		predicate = cmpt;
+		
+		predicate = Dictionnary.get(st.getPredicate().toString());
 		
 		
-		cmpt++;
+		if(Dictionnary.get(st.getObject().toString()) == null) {
+			cmpt++;
+			Dictionnary.put(st.getObject().toString(), cmpt  );
+		}
 		
-		Dictionnary.put(st.getObject().toString(),cmpt);
-		object = cmpt;
+		object = Dictionnary.get(st.getObject().toString());
 		
 		// test unitaire 
 		// Verif pour tout

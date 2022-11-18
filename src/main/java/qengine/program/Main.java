@@ -110,12 +110,10 @@ final class Main {
 			rdfParser.parse(dataReader, baseURI);
 		}
 		System.out.println(rdf.Dictionnary);
-		System.out.println(rdf.SPO);
-		System.out.println(rdf.POS);
-		System.out.println(rdf.OSP);
-		System.out.println(rdf.SOP);
-		System.out.println(rdf.PSO);
-		System.out.println(rdf.OPS);
+		Hexastore hexa = new Hexastore();
+		hexa.getOPS().affiche();
+				
+		//System.out.println(rdf.getInDico("\"4432131\""));
 		
 	}
 

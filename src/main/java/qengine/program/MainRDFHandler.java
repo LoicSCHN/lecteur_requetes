@@ -23,7 +23,7 @@ public final class MainRDFHandler extends AbstractRDFHandler {
 	
 	
 	Map<String,Integer > Dictionnary = new HashMap<String,Integer>();
-	
+	Hexastore h = new Hexastore();
 	private int subject;
 	private int predicate;   
 	private int object;
@@ -33,7 +33,7 @@ public final class MainRDFHandler extends AbstractRDFHandler {
 	@Override
 	public void handleStatement(Statement st) {
 		
-		Hexastore h = new Hexastore();
+		
 		
 		//System.out.println("\n" + st.getSubject() + "\t " + st.getPredicate() + "\t " + st.getObject());
 		//System.out.println(Dictionnary.get(st.getSubject().toString()));
@@ -63,12 +63,12 @@ public final class MainRDFHandler extends AbstractRDFHandler {
 		object = Dictionnary.get(st.getObject().toString());
 		
 		
-		h.getOPS().add( object, predicate, subject);
-		h.getOSP().add( object, subject, predicate);
-		h.getSPO().add( subject, predicate, object);
-		h.getSOP().add( subject,object , predicate);
-		h.getPSO().add( predicate, subject, object);
-		h.getPOS().add( predicate, object, subject);
+		h.getOPS().add(object, predicate, subject);
+		h.getOSP().add(object, subject, predicate);
+		h.getSPO().add(subject, predicate, object);
+		h.getSOP().add(subject,object , predicate);
+		h.getPSO().add(predicate, subject, object);
+		h.getPOS().add(predicate, object, subject);
 		// test unitaire 
 		// Verif pour tout
 		//comment faire decodage
@@ -83,7 +83,6 @@ public final class MainRDFHandler extends AbstractRDFHandler {
 		else 
 			return 0;
 	}
-	
 
 }
 

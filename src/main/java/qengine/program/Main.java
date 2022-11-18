@@ -111,7 +111,8 @@ final class Main {
 		}
 		System.out.println(rdf.Dictionnary);
 		Hexastore hexa = new Hexastore();
-		hexa.getOPS().affiche();
+		//hexa.getOPS().affiche();
+		rdf.h.getOPS().affiche();
 				
 		//System.out.println(rdf.getInDico("\"4432131\""));
 		

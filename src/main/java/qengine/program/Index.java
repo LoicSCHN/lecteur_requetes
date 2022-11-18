@@ -42,9 +42,10 @@ public class Index {
 	
 	public void affiche() {
 		// Print keys and values
-		for (Map<Integer,List<Integer>> i : index.values()) {
-			System.out.println("");
+		/*for (Map<Integer,List<Integer>> i : index.values()) {
+			System.out.println("Un : "+ index.);
 		  for()
-		}
+		}*/
+		System.out.println(index);
 	}
 }

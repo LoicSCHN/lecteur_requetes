@@ -1,5 +1,8 @@
 package qengine.program;
 
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,18 +37,38 @@ public class Index {
 			}
 		}
 		else {
-			index.put(un, new HashMap<Integer, List<Integer>>(){{put(deux, new ArrayList<Integer>() {{add(trois);}});}});
-					
+			index.put(un, new HashMap<Integer, List<Integer>>(){{put(deux, new ArrayList<Integer>() {{add(trois);}});}});		
 		}
 		
 	}
 	
+
+	
 	public void affiche() {
-		// Print keys and values
-		/*for (Map<Integer,List<Integer>> i : index.values()) {
-			System.out.println("Un : "+ index.);
-		  for()
-		}*/
 		System.out.println(index);
 	}
+	public List<Integer> search(int un, int deux) {
+		return index.get(un).get(deux);
+	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

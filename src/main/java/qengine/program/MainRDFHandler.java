@@ -24,8 +24,8 @@ import java.util.ArrayList;
 public final class MainRDFHandler extends AbstractRDFHandler {
 	
 	
-	Map<String,Integer > Dictionnary = new HashMap<String,Integer>();
-	Map<Integer,String > DictionnaryInv = new HashMap<Integer,String>();
+	Map<String,Integer > dictionnary = new HashMap<String,Integer>();
+	Map<Integer,String > dictionnaryInv = new HashMap<Integer,String>();
 	Hexastore h = new Hexastore();
 	private int subject;
 	private int predicate;   
@@ -37,33 +37,33 @@ public final class MainRDFHandler extends AbstractRDFHandler {
 	public void handleStatement(Statement st) {
 		
 		
-		if(Dictionnary.get(st.getSubject().toString()) == null) {
+		if(dictionnary.get(st.getSubject().toString()) == null) {
 			cmpt++;
-			Dictionnary.put(st.getSubject().toString(), cmpt  );
-			DictionnaryInv.put(cmpt,st.getSubject().toString()  );
+			dictionnary.put(st.getSubject().toString(), cmpt  );
+			dictionnaryInv.put(cmpt,st.getSubject().toString()  );
 		}
 		
-		subject = Dictionnary.get(st.getSubject().toString());
+		subject = dictionnary.get(st.getSubject().toString());
 		
 		
 		
-		if(Dictionnary.get(st.getPredicate().toString()) == null) {
+		if(dictionnary.get(st.getPredicate().toString()) == null) {
 			cmpt++;
-			Dictionnary.put(st.getPredicate().toString(), cmpt  );
-			DictionnaryInv.put(cmpt,st.getPredicate().toString()  );
+			dictionnary.put(st.getPredicate().toString(), cmpt  );
+			dictionnaryInv.put(cmpt,st.getPredicate().toString()  );
 		}
 		
 		
-		predicate = Dictionnary.get(st.getPredicate().toString());
+		predicate = dictionnary.get(st.getPredicate().toString());
 		
 		
-		if(Dictionnary.get(st.getObject().toString()) == null) {
+		if(dictionnary.get(st.getObject().toString()) == null) {
 			cmpt++;
-			Dictionnary.put(st.getObject().toString(), cmpt  );
-			DictionnaryInv.put(cmpt,st.getObject().toString()  );
+			dictionnary.put(st.getObject().toString(), cmpt  );
+			dictionnaryInv.put(cmpt,st.getObject().toString()  );
 		}
 		
-		object = Dictionnary.get(st.getObject().toString());
+		object = dictionnary.get(st.getObject().toString());
 		
 		
 		h.getOPS().add(object, predicate, subject);

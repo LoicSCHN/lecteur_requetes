@@ -1,5 +1,6 @@
 package qengine.program;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -10,6 +11,7 @@ import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -48,13 +50,13 @@ final class Main {
 	 * Votre repertoire de travail a vont se trouver les fichiers a lire
 	 */
 	static final String workingDir = "data/";
-
+	static final String queryDir = "data/queries/";
 	/**
 	 * Fichier contenant les requetes sparql
 	 */
-	static final String queryFile = workingDir + "sample_query.queryset";
+	static final String queryFile = queryDir + "sample_query.queryset";
 
-	static final String queryFileALL = workingDir + "STAR_ALL_workload.queryset";
+	static final String queryFileALL = queryDir + "STAR_ALL_workload.queryset";
 
 	/**
 	 * Fichier contenant des donnees rdf
@@ -76,7 +78,128 @@ final class Main {
 	 * Entree du programme
 	 */
 	public static void main(String[] args) throws Exception {
-		File file = new File("data/result/resQuery.txt");
+		long tempsDebut, tempsFin;
+		double tTotal;
+		tempsDebut = System.currentTimeMillis();
+		String queries = "";
+		String data = "";
+		String output = "";
+		boolean Jena = false;
+		float warm = 0;
+		boolean shuffle = false;
+		boolean queryResult = false;
+		String resQ = "resQuery.csv";
+		String resOutput = "resOutput.csv";
+		List<ParsedQuery> allQueries = new ArrayList<ParsedQuery>();
+
+		for(int i = 0; i < args.length; i++) {
+			if(args[i].equals("-queries")) {
+				queries = args[i+1];
+			}
+			if(args[i].equals("-data")) {
+				data = args[i+1];
+			}
+			if(args[i].equals("-output")) {
+				output = args[i+1];
+			}
+			if(args[i].equals("-Jena")) {
+				Jena = true;
+			}
+			if(args[i].equals("-warm")) {
+				warm =Integer.parseInt(args[i+1]) ;
+			}
+			if(args[i].equals("-shuffle")) {
+				shuffle = true;
+			}
+			if(args[i].equals("-export_query_results")) {
+				queryResult = true;
+			}
+		}
+		System.out.println(queries);
+		System.out.println(data);
+		System.out.println(output);
+		System.out.println(Jena);
+		System.out.println(warm);
+		System.out.println(shuffle);
+
+		createDictionnary(data);
+
+		allQueries = parseQueriesInArray( queries, allQueries);
+		if(warm != 0) {
+			System.out.println("Echauffement");
+			List<ParsedQuery> warmList = new ArrayList<ParsedQuery>();
+			for(ParsedQuery q : allQueries) {
+				warmList.add(q);
+			}
+			warmIt( warm,warmList);
+		}
+		if(shuffle) {
+			//Collections.shuffle(allQueries);
+		}
+		parseQueries(createFileResult(output, resQ), queryResult,allQueries);
+		
+		tempsFin = System.currentTimeMillis();
+		tTotal = (tempsFin - tempsDebut);
+		
+		File outputFile = createFileResult(output, resOutput);
+		PrintWriter writerRes = new PrintWriter(outputFile);
+		writerRes.write("nom du fichier de données"+','+"nom dossier requetes"+','+"nombre de tripletsRDF"+','+"nombre de requetes"+','+"temps lecture des données (ms)"+','+"temps lecture des requetes (ms)"+','+" temps création dico (ms) "+','+" nombre d’index"+','+"temps de création des index (ms)"+','+"temps total d’évaluation du workload (ms)"+','+"temps total (du début à la fin du programme) (ms)");
+		
+		writerRes.write('\n');
+		
+		writerRes.write(data+','+output+','+nbLigneData(data)+','+allQueries.size()+','+tTotal+','+"temps lecture des requetes (ms)"+','+" temps création dico (ms) "+','+" nombre d’index"+','+"temps de création des index (ms)"+','+"temps total d’évaluation du workload (ms)"+','+"temps total (du début à la fin du programme) (ms)");
+		//mettre fichier data.len
+		writerRes.close();
+		
+
+
+
+	}
+	
+	private static void warmIt(float warm,List<ParsedQuery> Queries) {
+		Collections.shuffle(Queries);
+		float nb = Queries.size()*(warm/100.0f);
+		System.out.println(warm/100);
+		System.out.println("Taille de l'échauffement : "+nb);
+		for(int i=0;i<nb;i++) {
+			List<StatementPattern> patterns = StatementPatternCollector.process(Queries.get(i).getTupleExpr());
+			Set<Integer> listRep = new HashSet<Integer>(); 
+			List<String> listRepString = new ArrayList<String>();
+			boolean isFirst = true;
+			for(StatementPattern pat : patterns) {
+
+				int pred = getInDico(pat.getPredicateVar().getValue().toString());
+				int obj = getInDico(pat.getObjectVar().getValue().toString());
+
+				List<Integer> res = rdf.h.getPOS().search(pred, obj);
+				if(res != null) {
+					if(listRep.isEmpty() && isFirst == true) {
+						for(int k: res) {
+							listRep.add(k);
+						}
+					}else {
+						listRep.retainAll(res);
+					}
+				}
+				isFirst = false;
+			}
+
+			for(int j : listRep) {
+				listRepString.add(getInDicoInv(j));
+				
+			}
+		}
+		
+		
+	}
+
+	private static File createFileResult(String output,String name) throws IOException {
+		String chemin = output.concat("resQuery.csv");
+
+		System.out.println(chemin);
+		File file = new File("data/result/"+name);
+		//File file = new File(chemin);
+		System.out.println(file);
 		if (file.createNewFile()) {
 			System.out.println("File created: " + file.getName());
 		} else {
@@ -89,35 +212,28 @@ final class Main {
 				System.out.println("Failed to delete the file");
 			}
 		}
-		createDictionnary();
-		parseQueries();
-		//rdf.h.getOPS().affiche();
-		//System.out.println(rdf.getInDico("http://db.uwaterloo.ca/~galuc/wsdbm/User0"));
-
-
-
+		return file;
 	}
+	//Laisser la ou pas ?
 
 	public static int getInDico(String value){		
-		if (rdf.Dictionnary.get(value) != null)
-			return rdf.Dictionnary.get(value);
+		if (rdf.dictionnary.get(value) != null)
+			return rdf.dictionnary.get(value);
 		else 
 			return 0;
 	}
 	public static String getInDicoInv(int value){		
-		if (rdf.DictionnaryInv.get(value) != null)
-			return rdf.DictionnaryInv.get(value);
+		if (rdf.dictionnaryInv.get(value) != null)
+			return rdf.dictionnaryInv.get(value);
 		else 
 			return null;
 	}
 
-	public static void createDictionnary() throws FileNotFoundException, IOException{
+	public static void createDictionnary(String data) throws FileNotFoundException, IOException{
 
 		try (Reader dataReader = new FileReader(dataFile100k)) {
 			// On va parser des donnees au format ntriples
 			RDFParser rdfParser = Rio.createParser(RDFFormat.NTRIPLES);
-
-
 
 			// On utilise notre implementation de handler
 			rdfParser.setRDFHandler(rdf);
@@ -129,109 +245,162 @@ final class Main {
 
 
 	}
-	public static void processAQuery2(ParsedQuery query) throws FileNotFoundException, UnsupportedEncodingException {
-		PrintWriter writer = new PrintWriter("data/result/res.txt", "UTF-8");
-		writer.println(rdf.Dictionnary);
-		writer.close();
+	public static void processAQuery2(ParsedQuery query, PrintWriter writer, boolean queryResult) throws FileNotFoundException, UnsupportedEncodingException {
+		/*PrintWriter writer = new PrintWriter("data/result/res.txt", "UTF-8");
+		writer.println(rdf.dictionnary);
+		writer.close();*/
 		List<StatementPattern> patterns = StatementPatternCollector.process(query.getTupleExpr());
 		Set<Integer> listRep = new HashSet<Integer>(); 
 		List<String> listRepString = new ArrayList<String>();
+		StringBuilder sb = new StringBuilder();
+		//sb.append(query.toString());
 		boolean isFirst = true;
 		for(StatementPattern pat : patterns) {
-			System.out.println("Predicat : " + pat.getPredicateVar().getValue());
-			System.out.println("Object : " + pat.getObjectVar().getValue());
+			//System.out.println("Predicat : " + pat.getPredicateVar().getValue());
+			//System.out.println("Object : " + pat.getObjectVar().getValue());
 			int pred = getInDico(pat.getPredicateVar().getValue().toString());
 			int obj = getInDico(pat.getObjectVar().getValue().toString());
-			System.out.println(pred);
-			System.out.println(obj);
+			//System.out.println(pred);
+			//System.out.println(obj);
 			List<Integer> res = rdf.h.getPOS().search(pred, obj);
 			if(res != null) {
 				if(listRep.isEmpty() && isFirst == true) {
-					for(int i: res)
+					for(int i: res) {
 						listRep.add(i);
+					}
 				}else {
 					listRep.retainAll(res);
 				}
 			}
 			isFirst = false;
 		}
-		
+
 		for(int i : listRep) {
 			listRepString.add(getInDicoInv(i));
+			sb.append(getInDicoInv(i));
+			sb.append(',');
 		}
-		System.out.println(listRepString);
+		if(listRepString.isEmpty()) {
+			sb.append("null");
+			//System.out.println("null");
+		}else {
+			//System.out.println(listRepString);
+		}
+		sb.append('\n');
+		if(queryResult) {
+			writer.write(sb.toString());
+		}
+
+
 
 	}
 
 
 	// ========================================================================
 
-	/**
-	 * Traite chaque requete lue dans {@link #queryFile} avec {@link #processAQuery(ParsedQuery)}.
-	 */
-	private static void parseQueries() throws FileNotFoundException, IOException {
-		/**
-		 * Try-with-resources
-		 * 
-		 * @see <a href="https://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html">Try-with-resources</a>
-		 */
-		/*
-		 * On utilise un stream pour lire les lignes une par une, sans avoir a toutes les stocker
-		 * entierement dans une collection.
-		 */
 
+	private static void parseQueries(File file, boolean queryResult, List<ParsedQuery> Queries) throws FileNotFoundException, IOException {
+		PrintWriter writer = new PrintWriter(file);
+
+		for(ParsedQuery query: Queries) {
+			processAQuery2(query,writer,queryResult); // Traitement de la requete, a adapter/reecrire pour votre programme
+		}
+
+		writer.close();
+		if(!queryResult) {
+			file.delete();
+		}
+	}
+
+	private static List<ParsedQuery> parseQueriesInArray(String folderPath, List<ParsedQuery> Queries) throws FileNotFoundException, IOException {
+		File dir  = new File(queryDir);
+		File[] liste = dir.listFiles();
+		for(File item : liste){
+			if(item.isFile())
+			{ 
+				System.out.format("Nom du fichier: %s%n", item.getName()); 
+				try (Stream<String> lineStream = Files.lines(Paths.get(item.getPath()))) {
+
+					SPARQLParser sparqlParser = new SPARQLParser();
+					Iterator<String> lineIterator = lineStream.iterator();
+					StringBuilder queryString = new StringBuilder();
+
+					while (lineIterator.hasNext())
+					{
+						String line = lineIterator.next();
+						queryString.append(line);
+
+						if (line.trim().endsWith("}")) {
+
+							ParsedQuery query = sparqlParser.parseQuery(queryString.toString(), baseURI);
+							Queries.add(query);
+
+							queryString.setLength(0); // Reset le buffer de la requete en chaine vide
+						}
+					}
+				}
+			} 
+		}
+
+		return Queries;
+	}
+
+	private static int nbLigneData(String data) throws IOException {
+		int nbrLine = 0;
+		File file = new File(dataFile100k);
+		FileReader fr = new FileReader(file);
+		// Créer l'objet BufferedReader 
+		BufferedReader br = new BufferedReader(fr);  
+		String str;
+		// Lire le contenu du fichier
+		while((str = br.readLine()) != null)
+		{
+			//Pour chaque ligne, incrémentez le nombre de lignes
+			nbrLine++;               
+
+		}
+		fr.close();
+		return nbrLine;
+	}
+
+}
+
+//RUN>RunConfiguration
+//Utiliser les arguments comme path
+
+/*
+private static void parseQueries(File file, String queries, boolean queryResult) throws FileNotFoundException, IOException {
+		PrintWriter writer = new PrintWriter(file);
 		try (Stream<String> lineStream = Files.lines(Paths.get(queryFileALL))) {
 
 			SPARQLParser sparqlParser = new SPARQLParser();
 			Iterator<String> lineIterator = lineStream.iterator();
 			StringBuilder queryString = new StringBuilder();
-			int boucle = 0;
+			//int boucle = 0;
 
 			while (lineIterator.hasNext())
-				/*
-				 * On stocke plusieurs lignes jusqu'a ce que l'une d'entre elles se termine par un '}'
-				 * On considere alors que c'est la fin d'une requete
-				 */
+
 			{
 				String line = lineIterator.next();
 				queryString.append(line);
 
 				if (line.trim().endsWith("}")) {
-					boucle++;
-					System.out.println(boucle);
+					//boucle++;
+					//System.out.println(boucle); // nb requete = 1200
 					//ici on passe a la requete suivante
 					ParsedQuery query = sparqlParser.parseQuery(queryString.toString(), baseURI);
 
-					processAQuery2(query); // Traitement de la requete, a adapter/reecrire pour votre programme
+					processAQuery2(query,writer,queryResult); // Traitement de la requete, a adapter/reecrire pour votre programme
 
 					queryString.setLength(0); // Reset le buffer de la requete en chaine vide
 				}
 			}
 		}
+		writer.close();
+		if(!queryResult) {
+			file.delete();
+		}
 	}
+ */
 
-
-	public static void processAQuery(ParsedQuery query) {
-		List<StatementPattern> patterns = StatementPatternCollector.process(query.getTupleExpr());
-
-		System.out.println("first pattern : " + patterns.get(0));
-
-		System.out.println("object of the first pattern : " + patterns.get(0).getObjectVar().getValue());
-
-		System.out.println("variables to project : ");
-
-		// Utilisation d'une classe anonyme
-		query.getTupleExpr().visit(new AbstractQueryModelVisitor<RuntimeException>() {
-
-			public void meet(Projection projection) {
-				System.out.println(projection.getProjectionElemList().getElements());
-			}
-		});
-	}
-
-
-
-}
-
-//RUN>RunConfiguration
 

@@ -75,6 +75,8 @@ final class Main {
 
 	static final MainRDFHandler rdf = new MainRDFHandler();
 
+	static final Hexastore h = new Hexastore();
+	static Dictionnary dico = new Dictionnary();
 	// ========================================================================
 
 	/**
@@ -86,13 +88,20 @@ final class Main {
 	 * Entree du programme
 	 */
 	public static void main(String[] args) throws Exception {
+		
 		long tTotalDebut, tTotalFin;
 		double tTotal;
 		long tLectureReqDebut, tLectureReqFin;
 		double tLectureReqTotal;
 		long tWorkloadDebut, tWorkloadFin;
 		double tWorkloadTotal;
+		long tDataDebut, tDataFin;
+		double tDataTotal;
+		long tDicoDebut, tDicoFin;
+		double tDicoTotal;
+		
 		tTotalDebut = System.currentTimeMillis();
+		
 		String queries = "";
 		String data = "";
 		String output = "";
@@ -100,6 +109,7 @@ final class Main {
 		float warm = 0;
 		boolean shuffle = false;
 		boolean queryResult = false;
+		
 		String resQ = "resQuery.csv";
 		String resOutput = "resOutput.csv";
 		List<ParsedQuery> allQueries = new ArrayList<ParsedQuery>();
@@ -133,8 +143,24 @@ final class Main {
 		System.out.println(Jena);
 		System.out.println(warm);
 		System.out.println(shuffle);
-
-		createDictionnary(data);
+		
+		tDataDebut = System.currentTimeMillis();
+		parseData(data);
+		tDataFin = System.currentTimeMillis();
+		tDataTotal = tDataFin - tDataDebut;
+		
+		tDicoDebut = System.currentTimeMillis();
+		 createDico(rdf.parsedData);
+		 //System.out.println(dico.getinDico("http://db.uwaterloo.ca/~galuc/wsdbm/Country135"));
+		tDicoFin = System.currentTimeMillis();
+		tDicoTotal = tDicoFin - tDicoDebut;
+		
+		long tIndexDebut = System.currentTimeMillis();
+		createIndex(rdf.parsedData);
+		long tIndexFin = System.currentTimeMillis();
+		long tIndexTotal = tIndexFin - tIndexDebut;
+		//createDictionnary(data);
+		//System.out.println(rdf.parsedData.size());
 		tLectureReqDebut = System.currentTimeMillis();
 		allQueries = parseQueriesInArray( queries, allQueries);
 		tLectureReqFin = System.currentTimeMillis();
@@ -159,13 +185,16 @@ final class Main {
 		tTotalFin = System.currentTimeMillis();
 		tTotal = (tTotalFin - tTotalDebut);
 		
+		System.out.println("Temps workload (ms): "+tWorkloadTotal);
+		System.out.println("Temps total (ms): "+tTotal);
+		
 		File outputFile = createFileResult(output, resOutput);
 		PrintWriter writerRes = new PrintWriter(outputFile);
 		writerRes.write("nom du fichier de données"+','+"nom dossier requetes"+','+"nombre de tripletsRDF"+','+"nombre de requetes"+','+"temps lecture des données (ms)"+','+"temps lecture des requetes (ms)"+','+" temps création dico (ms) "+','+" nombre d’index"+','+"temps de création des index (ms)"+','+"temps total d’évaluation du workload (ms)"+','+"temps total (du début à la fin du programme) (ms)");
 		
 		writerRes.write('\n');
 		
-		writerRes.write(data+','+output+','+nbLigneData(data)+','+allQueries.size()+','+"temps lecture des données (ms)"+','+tLectureReqTotal+','+" temps création dico (ms) "+','+"6"+','+"temps de création des index (ms)"+','+tWorkloadTotal+','+tTotal);
+		writerRes.write(data+','+output+','+nbLigneData(data)+','+allQueries.size()+','+tDataTotal+','+tLectureReqTotal+','+tDicoTotal+','+"6"+','+tIndexTotal+','+tWorkloadTotal+','+tTotal);
 		//mettre fichier data.len
 		writerRes.close();
 		
@@ -177,7 +206,7 @@ final class Main {
 	private static void warmIt(float warm,List<ParsedQuery> Queries) {
 		Collections.shuffle(Queries);
 		float nb = Queries.size()*(warm/100.0f);
-		System.out.println(warm/100);
+		//System.out.println(warm/100);
 		System.out.println("Taille de l'échauffement : "+nb);
 		for(int i=0;i<nb;i++) {
 			List<StatementPattern> patterns = StatementPatternCollector.process(Queries.get(i).getTupleExpr());
@@ -185,11 +214,11 @@ final class Main {
 			List<String> listRepString = new ArrayList<String>();
 			boolean isFirst = true;
 			for(StatementPattern pat : patterns) {
+				//System.out.println(pat.getObjectVar().getValue().toString());
+				int pred = dico.getinDico(pat.getPredicateVar().getValue().toString());
+				int obj = dico.getinDico(pat.getObjectVar().getValue().toString());
 
-				int pred = getInDico(pat.getPredicateVar().getValue().toString());
-				int obj = getInDico(pat.getObjectVar().getValue().toString());
-
-				List<Integer> res = rdf.h.getPOS().search(pred, obj);
+				List<Integer> res = h.getPOS().search(pred, obj);
 				if(res != null) {
 					if(listRep.isEmpty() && isFirst == true) {
 						for(int k: res) {
@@ -203,7 +232,7 @@ final class Main {
 			}
 
 			for(int j : listRep) {
-				listRepString.add(getInDicoInv(j));
+				listRepString.add(dico.getinDicoInv(j));
 				
 			}
 		}
@@ -213,27 +242,27 @@ final class Main {
 
 	private static File createFileResult(String output,String name) throws IOException {
 		String chemin = output.concat(name);
-		System.out.println(chemin);
+		//System.out.println(chemin);
 		//File file = new File("data/result/"+name);
 		File file = new File(chemin);
-		System.out.println(file);
+		//System.out.println(file);
 		if (file.createNewFile()) {
-			System.out.println("File created: " + file.getName());
+			//System.out.println("File created: " + file.getName());
 		} else {
-			System.out.println("File already exists.");
+			//System.out.println("File already exists.");
 			if (file.delete()) {
-				System.out.println("File deleted successfully");
+				//System.out.println("File deleted successfully");
 				file.createNewFile();
 			}
 			else {
-				System.out.println("Failed to delete the file");
+				//System.out.println("Failed to delete the file");
 			}
 		}
 		return file;
 	}
-	//Laisser la ou pas ?
+	
 
-	public static int getInDico(String value){		
+	/*public static int getInDico(String value){		
 		if (rdf.dictionnary.get(value) != null)
 			return rdf.dictionnary.get(value);
 		else 
@@ -244,9 +273,9 @@ final class Main {
 			return rdf.dictionnaryInv.get(value);
 		else 
 			return null;
-	}
+	}*/
 
-	public static void createDictionnary(String data) throws FileNotFoundException, IOException{
+	/*public static void createDictionnary(String data) throws FileNotFoundException, IOException{
 
 		try (Reader dataReader = new FileReader(data)) {
 			// On va parser des donnees au format ntriples
@@ -258,10 +287,51 @@ final class Main {
 			// Parsing et traitement de chaque triple par le handler
 			rdfParser.parse(dataReader, baseURI);
 		}
+	}*/
+	
+	public static void parseData(String data) throws FileNotFoundException, IOException{
 
+		try (Reader dataReader = new FileReader(data)) {
+			// On va parser des donnees au format ntriples
+			RDFParser rdfParser = Rio.createParser(RDFFormat.NTRIPLES);
 
+			// On utilise notre implementation de handler
+			rdfParser.setRDFHandler(rdf);
 
+			// Parsing et traitement de chaque triple par le handler
+			rdfParser.parse(dataReader, baseURI);
+		}
 	}
+	
+	public static void createDico(List<String> datas) {
+		//Dictionnary dictionnary = new Dictionnary();
+		for (String data : datas) {
+            String[] split = data.split(" ");
+            dico.add(split[0]);
+            dico.add(split[1]);
+            dico.add(split[2]);
+            
+		}
+		//return dictionnary;
+	}
+	
+	public static void createIndex(List<String> datas) {
+		for (String data : datas) {
+            String[] split = data.split(" ");
+            String s = split[0];
+            String p = split[1];
+            String o = split[2];
+            
+            h.getOPS().add(dico.getDictionnary().get(o), dico.getDictionnary().get(p), dico.getDictionnary().get(s));
+            h.getOSP().add(dico.getDictionnary().get(o), dico.getDictionnary().get(s), dico.getDictionnary().get(p));
+            h.getSPO().add(dico.getDictionnary().get(s), dico.getDictionnary().get(p), dico.getDictionnary().get(o));
+            h.getSOP().add(dico.getDictionnary().get(s), dico.getDictionnary().get(o), dico.getDictionnary().get(p));
+            h.getPSO().add(dico.getDictionnary().get(p), dico.getDictionnary().get(s), dico.getDictionnary().get(o));
+            h.getPOS().add(dico.getDictionnary().get(p), dico.getDictionnary().get(o), dico.getDictionnary().get(s));
+		}
+		
+	}
+	
 	public static List<String> processAQuery2(ParsedQuery query, PrintWriter writer, boolean queryResult) throws FileNotFoundException, UnsupportedEncodingException {
 		/*PrintWriter writer = new PrintWriter("data/result/res.txt", "UTF-8");
 		writer.println(rdf.dictionnary);
@@ -273,9 +343,9 @@ final class Main {
 		//sb.append(query.toString());
 		boolean isFirst = true;
 		for(StatementPattern pat : patterns) {
-			int pred = getInDico(pat.getPredicateVar().getValue().toString());
-			int obj = getInDico(pat.getObjectVar().getValue().toString());
-			List<Integer> res = rdf.h.getPOS().search(pred, obj);
+			int pred = dico.getinDico(pat.getPredicateVar().getValue().toString());
+			int obj = dico.getinDico(pat.getObjectVar().getValue().toString());
+			List<Integer> res = h.getPOS().search(pred, obj);
 			if(res != null) {
 				if(isFirst == true) {
 					for(int i: res) {
@@ -289,8 +359,8 @@ final class Main {
 		}
 
 		for(int i : listRep) {
-			listRepString.add(getInDicoInv(i));
-			sb.append(getInDicoInv(i));
+			listRepString.add(dico.getinDicoInv(i));
+			sb.append(dico.getinDicoInv(i));
 			sb.append(',');
 		}
 		if(listRepString.isEmpty()) {
@@ -319,16 +389,16 @@ final class Main {
 		int pasok = 0;
 
 		Model model = modelData(data);
-
+		System.out.println("Jena :");
 		for(ParsedQuery query: Queries) {
 			Set<String> myResult = new HashSet<String>();
 			Set<String> jenaResult = new HashSet<String>();
 			myResult.addAll(processAQuery2(query,writer,queryResult));
 			//System.out.println("myResult : "+myResult);// Traitement de la requete, a adapter/reecrire pour votre programme
-			if(Jena) {
-				jenaResult.addAll(jenaQuery(queryForJena(query, data), model)) ;
+			
+			jenaResult.addAll(jenaQuery(queryForJena(query, data), model)) ;
 				//System.out.println("jenaResult : "+jenaResult);
-			}
+			
 			if(myResult.equals(jenaResult)) {
 				ok++;
 			}else {
@@ -337,8 +407,8 @@ final class Main {
 				pasok++;
 			}
 		}
-		System.out.println("ok : "+ok);
-		System.out.println("pas ok : "+pasok);
+		System.out.println("Validées : "+ok);
+		System.out.println("Non validées : "+pasok);
 
 		writer.close();
 		if(!queryResult) {
@@ -427,7 +497,7 @@ final class Main {
         List<StatementPattern> patterns = StatementPatternCollector.process(query.getTupleExpr());
 
         Set<Integer> answers = new HashSet<>();
-        boolean firstEmpty = true;
+        
         String request = "";
         request += "SELECT ?v0 WHERE {";
         for (StatementPattern pattern : patterns) {
@@ -435,16 +505,6 @@ final class Main {
             //System.out.println(pattern.getPredicateVar().toString());
         }
 		request += "}";
-
-
-        StringBuilder result = new StringBuilder();
-        if (answers.isEmpty()) {
-            result.append("null\n");
-        } else {
-            for (Integer answer : answers) {
-                result.append(request).append("\n");
-            }
-        }
         //System.out.println(result);
         return request;
     }

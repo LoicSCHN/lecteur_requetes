@@ -1,10 +1,11 @@
 package qengine.program;
 
 import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.query.parser.ParsedQuery;
 import org.eclipse.rdf4j.rio.helpers.AbstractRDFHandler;
 
-import com.github.andrewoma.dexx.collection.List;
 
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.io.FileNotFoundException;
@@ -23,20 +24,19 @@ import java.util.ArrayList;
  */
 public final class MainRDFHandler extends AbstractRDFHandler {
 	
+	List<String> parsedData = new ArrayList<String>();
 	
-	Map<String,Integer > dictionnary = new HashMap<String,Integer>();
-	Map<Integer,String > dictionnaryInv = new HashMap<Integer,String>();
-	Hexastore h = new Hexastore();
-	private int subject;
-	private int predicate;   
-	private int object;
-	
-	private int boucle = 0;
-	private int cmpt = 0;
+
+
 	@Override
 	public void handleStatement(Statement st) {
+		//séparer en 3
+		// arrayList
+		// credeux dictionnaireser le dico
+		//split pour faire les indexs
 		
-		
+		parsedData.add(st.getSubject().toString()+' '+st.getPredicate().toString()+' '+st.getObject().toString());
+		/*
 		if(dictionnary.get(st.getSubject().toString()) == null) {
 			cmpt++;
 			dictionnary.put(st.getSubject().toString(), cmpt  );
@@ -71,7 +71,7 @@ public final class MainRDFHandler extends AbstractRDFHandler {
 		h.getSPO().add(subject, predicate, object);
 		h.getSOP().add(subject,object , predicate);
 		h.getPSO().add(predicate, subject, object);
-		h.getPOS().add(predicate, object, subject);
+		h.getPOS().add(predicate, object, subject);*/
 
 		// test unitaire 
 		

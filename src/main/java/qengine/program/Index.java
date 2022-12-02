@@ -20,7 +20,7 @@ public class Index {
 		
 	}
 	
-	public Map<Integer, Map<Integer,List<Integer>>> getIndex(){
+	public Map<Integer,Map<Integer,List<Integer>>> getIndex(){
 		return index;
 	}
 	
@@ -47,6 +47,7 @@ public class Index {
 	public void affiche() {
 		System.out.println(index);
 	}
+	
 	public List<Integer> search(int un, int deux) {
 		if(index.get(un).get(deux) != null) {
 			return index.get(un).get(deux);

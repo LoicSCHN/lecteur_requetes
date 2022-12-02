@@ -194,11 +194,10 @@ final class Main {
 	}
 
 	private static File createFileResult(String output,String name) throws IOException {
-		String chemin = output.concat("resQuery.csv");
-
+		String chemin = output.concat(name);
 		System.out.println(chemin);
-		File file = new File("data/result/"+name);
-		//File file = new File(chemin);
+		//File file = new File("data/result/"+name);
+		File file = new File(chemin);
 		System.out.println(file);
 		if (file.createNewFile()) {
 			System.out.println("File created: " + file.getName());
@@ -231,7 +230,7 @@ final class Main {
 
 	public static void createDictionnary(String data) throws FileNotFoundException, IOException{
 
-		try (Reader dataReader = new FileReader(dataFile100k)) {
+		try (Reader dataReader = new FileReader(data)) {
 			// On va parser des donnees au format ntriples
 			RDFParser rdfParser = Rio.createParser(RDFFormat.NTRIPLES);
 
@@ -313,7 +312,7 @@ final class Main {
 	}
 
 	private static List<ParsedQuery> parseQueriesInArray(String folderPath, List<ParsedQuery> Queries) throws FileNotFoundException, IOException {
-		File dir  = new File(queryDir);
+		File dir  = new File(folderPath);
 		File[] liste = dir.listFiles();
 		for(File item : liste){
 			if(item.isFile())
@@ -347,7 +346,7 @@ final class Main {
 
 	private static int nbLigneData(String data) throws IOException {
 		int nbrLine = 0;
-		File file = new File(dataFile100k);
+		File file = new File(data);
 		FileReader fr = new FileReader(file);
 		// Créer l'objet BufferedReader 
 		BufferedReader br = new BufferedReader(fr);  

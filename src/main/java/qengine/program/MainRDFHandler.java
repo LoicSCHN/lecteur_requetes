@@ -75,7 +75,6 @@ public final class MainRDFHandler extends AbstractRDFHandler {
 
 		// test unitaire 
 		
-		//comment faire decodage
 	
 		
 

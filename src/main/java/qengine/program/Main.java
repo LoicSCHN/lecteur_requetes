@@ -18,6 +18,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.apache.jena.query.Query;
+import org.apache.jena.query.QueryExecution;
+import org.apache.jena.query.QueryExecutionFactory;
+import org.apache.jena.query.QueryFactory;
+import org.apache.jena.query.QuerySolution;
+import org.apache.jena.query.ResultSet;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
 import org.eclipse.rdf4j.query.algebra.Projection;
 import org.eclipse.rdf4j.query.algebra.StatementPattern;
 import org.eclipse.rdf4j.query.algebra.helpers.AbstractQueryModelVisitor;
@@ -126,7 +134,7 @@ final class Main {
 
 		allQueries = parseQueriesInArray( queries, allQueries);
 		if(warm != 0) {
-			System.out.println("Echauffement");
+			System.out.println("Echauffement  : ");
 			List<ParsedQuery> warmList = new ArrayList<ParsedQuery>();
 			for(ParsedQuery q : allQueries) {
 				warmList.add(q);
@@ -136,7 +144,7 @@ final class Main {
 		if(shuffle) {
 			//Collections.shuffle(allQueries);
 		}
-		parseQueries(createFileResult(output, resQ), queryResult,allQueries);
+		parseQueries(createFileResult(output, resQ), queryResult,allQueries,Jena,data);
 		
 		tempsFin = System.currentTimeMillis();
 		tTotal = (tempsFin - tempsDebut);
@@ -244,7 +252,7 @@ final class Main {
 
 
 	}
-	public static void processAQuery2(ParsedQuery query, PrintWriter writer, boolean queryResult) throws FileNotFoundException, UnsupportedEncodingException {
+	public static List<String> processAQuery2(ParsedQuery query, PrintWriter writer, boolean queryResult) throws FileNotFoundException, UnsupportedEncodingException {
 		/*PrintWriter writer = new PrintWriter("data/result/res.txt", "UTF-8");
 		writer.println(rdf.dictionnary);
 		writer.close();*/
@@ -255,17 +263,13 @@ final class Main {
 		//sb.append(query.toString());
 		boolean isFirst = true;
 		for(StatementPattern pat : patterns) {
-			//System.out.println("Predicat : " + pat.getPredicateVar().getValue());
-			//System.out.println("Object : " + pat.getObjectVar().getValue());
 			int pred = getInDico(pat.getPredicateVar().getValue().toString());
 			int obj = getInDico(pat.getObjectVar().getValue().toString());
-			//System.out.println(pred);
-			//System.out.println(obj);
 			List<Integer> res = rdf.h.getPOS().search(pred, obj);
 			if(res != null) {
-				if(listRep.isEmpty() && isFirst == true) {
+				if(isFirst == true) {
 					for(int i: res) {
-						listRep.add(i);
+						listRep.add(i);//addAll
 					}
 				}else {
 					listRep.retainAll(res);
@@ -289,7 +293,7 @@ final class Main {
 		if(queryResult) {
 			writer.write(sb.toString());
 		}
-
+		return listRepString;
 
 
 	}
@@ -298,12 +302,33 @@ final class Main {
 	// ========================================================================
 
 
-	private static void parseQueries(File file, boolean queryResult, List<ParsedQuery> Queries) throws FileNotFoundException, IOException {
+	private static void parseQueries(File file, boolean queryResult, List<ParsedQuery> Queries, boolean Jena,String data) throws FileNotFoundException, IOException {
 		PrintWriter writer = new PrintWriter(file);
+		
+		int ok = 0;
+		int pasok = 0;
+
+		Model model = modelData(data);
 
 		for(ParsedQuery query: Queries) {
-			processAQuery2(query,writer,queryResult); // Traitement de la requete, a adapter/reecrire pour votre programme
+			Set<String> myResult = new HashSet<String>();
+			Set<String> jenaResult = new HashSet<String>();
+			myResult.addAll(processAQuery2(query,writer,queryResult));
+			//System.out.println("myResult : "+myResult);// Traitement de la requete, a adapter/reecrire pour votre programme
+			if(Jena) {
+				jenaResult.addAll(jenaQuery(queryForJena(query, data), model)) ;
+				//System.out.println("jenaResult : "+jenaResult);
+			}
+			if(myResult.equals(jenaResult)) {
+				ok++;
+			}else {
+				System.out.println("me : "+myResult);
+				System.out.println("jena"+ jenaResult);
+				pasok++;
+			}
 		}
+		System.out.println("ok : "+ok);
+		System.out.println("pas ok : "+pasok);
 
 		writer.close();
 		if(!queryResult) {
@@ -317,7 +342,7 @@ final class Main {
 		for(File item : liste){
 			if(item.isFile())
 			{ 
-				System.out.format("Nom du fichier: %s%n", item.getName()); 
+				//System.out.format("Nom du fichier: %s%n", item.getName()); 
 				try (Stream<String> lineStream = Files.lines(Paths.get(item.getPath()))) {
 
 					SPARQLParser sparqlParser = new SPARQLParser();
@@ -348,21 +373,74 @@ final class Main {
 		int nbrLine = 0;
 		File file = new File(data);
 		FileReader fr = new FileReader(file);
-		// Créer l'objet BufferedReader 
 		BufferedReader br = new BufferedReader(fr);  
 		String str;
-		// Lire le contenu du fichier
 		while((str = br.readLine()) != null)
 		{
-			//Pour chaque ligne, incrémentez le nombre de lignes
 			nbrLine++;               
 
 		}
 		fr.close();
 		return nbrLine;
 	}
+	
+
+	
+	public static Model modelData(String data) {
+        Model model = ModelFactory.createDefaultModel();
+        model.read(data);
+        return model;
+    }
+	
+	
+
+    public static List<String> jenaQuery(String query, Model model) {
+        List<String> answers = new ArrayList<>();
+        //System.out.println("query : "+query);
+        Query queryJena = QueryFactory.create(query);
+        try (QueryExecution qexec = QueryExecutionFactory.create(queryJena, model)) {
+            ResultSet results = qexec.execSelect();
+            if (!results.hasNext()) {
+                //answers.add("");
+            } else {
+                while (results.hasNext()) {
+                    QuerySolution soln = results.nextSolution();
+                    answers.add(soln.get("v0").toString());
+                }
+            }
+        }
+        //System.out.println("ans : "+answers);
+        return answers;
+    }
+    
+    public static String queryForJena(ParsedQuery query, String data) {
+        List<StatementPattern> patterns = StatementPatternCollector.process(query.getTupleExpr());
+
+        Set<Integer> answers = new HashSet<>();
+        boolean firstEmpty = true;
+        String request = "";
+        request += "SELECT ?v0 WHERE {";
+        for (StatementPattern pattern : patterns) {
+			request += "?" + pattern.getSubjectVar().getName() + " <" + pattern.getPredicateVar().getValue() + "> " + (pattern.getObjectVar().getValue().isLiteral()?pattern.getObjectVar().getValue():("<"+pattern.getObjectVar().getValue()+">")) + " .";
+            //System.out.println(pattern.getPredicateVar().toString());
+        }
+		request += "}";
+
+
+        StringBuilder result = new StringBuilder();
+        if (answers.isEmpty()) {
+            result.append("null\n");
+        } else {
+            for (Integer answer : answers) {
+                result.append(request).append("\n");
+            }
+        }
+        //System.out.println(result);
+        return request;
+    }
 
 }
+
 
 //RUN>RunConfiguration
 //Utiliser les arguments comme path

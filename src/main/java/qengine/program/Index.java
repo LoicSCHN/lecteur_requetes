@@ -48,7 +48,12 @@ public class Index {
 		System.out.println(index);
 	}
 	public List<Integer> search(int un, int deux) {
-		return index.get(un).get(deux);
+		if(index.get(un).get(deux) != null) {
+			return index.get(un).get(deux);
+		}
+		else {
+			return new ArrayList<Integer>();
+		}
 	}
 }
 

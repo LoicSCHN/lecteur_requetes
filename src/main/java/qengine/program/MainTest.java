@@ -6,20 +6,30 @@ import static org.junit.Assert.*;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.eclipse.rdf4j.query.parser.ParsedQuery;
 import org.junit.jupiter.api.Test;
+
 
 class MainTest {
 
 
 	@Test
 	public void testGetDico() throws FileNotFoundException, IOException {
-		String str = "http://db.uwaterloo.ca/~galuc/wsdbm/User0";
+		String str = "<http://db.uwaterloo.ca/~galuc/wsdbm/User0>";
 		//Main.createDictionnary();
+		String data = Main.dataFile100k;
+		String queries = "data/queries/";
+		List<ParsedQuery> allQueries = new ArrayList<ParsedQuery>();
 		Main.h.getOSP().affiche();
 		int res = Main.dico.getinDico(str);
-		assertEquals(1,res);
+		assertEquals(0,res);
 		assertNotEquals(4, res);
+		assertEquals(107338, Main.nbLigneData(data));
+		allQueries = Main.parseQueriesInArray(queries, allQueries);
+		assertEquals(1200, allQueries.size());
 		
 	}
 	

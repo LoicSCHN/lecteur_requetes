@@ -262,32 +262,6 @@ final class Main {
 	}
 	
 
-	/*public static int getInDico(String value){		
-		if (rdf.dictionnary.get(value) != null)
-			return rdf.dictionnary.get(value);
-		else 
-			return 0;
-	}
-	public static String getInDicoInv(int value){		
-		if (rdf.dictionnaryInv.get(value) != null)
-			return rdf.dictionnaryInv.get(value);
-		else 
-			return null;
-	}*/
-
-	/*public static void createDictionnary(String data) throws FileNotFoundException, IOException{
-
-		try (Reader dataReader = new FileReader(data)) {
-			// On va parser des donnees au format ntriples
-			RDFParser rdfParser = Rio.createParser(RDFFormat.NTRIPLES);
-
-			// On utilise notre implementation de handler
-			rdfParser.setRDFHandler(rdf);
-
-			// Parsing et traitement de chaque triple par le handler
-			rdfParser.parse(dataReader, baseURI);
-		}
-	}*/
 	
 	public static void parseData(String data) throws FileNotFoundException, IOException{
 
@@ -416,7 +390,7 @@ final class Main {
 		}
 	}
 
-	private static List<ParsedQuery> parseQueriesInArray(String folderPath, List<ParsedQuery> Queries) throws FileNotFoundException, IOException {
+	public static List<ParsedQuery> parseQueriesInArray(String folderPath, List<ParsedQuery> Queries) throws FileNotFoundException, IOException {
 		File dir  = new File(folderPath);
 		File[] liste = dir.listFiles();
 		for(File item : liste){
@@ -449,7 +423,7 @@ final class Main {
 		return Queries;
 	}
 
-	private static int nbLigneData(String data) throws IOException {
+	public static int nbLigneData(String data) throws IOException {
 		int nbrLine = 0;
 		File file = new File(data);
 		FileReader fr = new FileReader(file);
@@ -512,42 +486,6 @@ final class Main {
 }
 
 
-//RUN>RunConfiguration
-//Utiliser les arguments comme path
 
-/*
-private static void parseQueries(File file, String queries, boolean queryResult) throws FileNotFoundException, IOException {
-		PrintWriter writer = new PrintWriter(file);
-		try (Stream<String> lineStream = Files.lines(Paths.get(queryFileALL))) {
-
-			SPARQLParser sparqlParser = new SPARQLParser();
-			Iterator<String> lineIterator = lineStream.iterator();
-			StringBuilder queryString = new StringBuilder();
-			//int boucle = 0;
-
-			while (lineIterator.hasNext())
-
-			{
-				String line = lineIterator.next();
-				queryString.append(line);
-
-				if (line.trim().endsWith("}")) {
-					//boucle++;
-					//System.out.println(boucle); // nb requete = 1200
-					//ici on passe a la requete suivante
-					ParsedQuery query = sparqlParser.parseQuery(queryString.toString(), baseURI);
-
-					processAQuery2(query,writer,queryResult); // Traitement de la requete, a adapter/reecrire pour votre programme
-
-					queryString.setLength(0); // Reset le buffer de la requete en chaine vide
-				}
-			}
-		}
-		writer.close();
-		if(!queryResult) {
-			file.delete();
-		}
-	}
- */
 
 

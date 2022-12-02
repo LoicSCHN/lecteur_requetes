@@ -86,9 +86,13 @@ final class Main {
 	 * Entree du programme
 	 */
 	public static void main(String[] args) throws Exception {
-		long tempsDebut, tempsFin;
+		long tTotalDebut, tTotalFin;
 		double tTotal;
-		tempsDebut = System.currentTimeMillis();
+		long tLectureReqDebut, tLectureReqFin;
+		double tLectureReqTotal;
+		long tWorkloadDebut, tWorkloadFin;
+		double tWorkloadTotal;
+		tTotalDebut = System.currentTimeMillis();
 		String queries = "";
 		String data = "";
 		String output = "";
@@ -131,8 +135,11 @@ final class Main {
 		System.out.println(shuffle);
 
 		createDictionnary(data);
-
+		tLectureReqDebut = System.currentTimeMillis();
 		allQueries = parseQueriesInArray( queries, allQueries);
+		tLectureReqFin = System.currentTimeMillis();
+		tLectureReqTotal = tLectureReqFin - tLectureReqDebut;
+		
 		if(warm != 0) {
 			System.out.println("Echauffement  : ");
 			List<ParsedQuery> warmList = new ArrayList<ParsedQuery>();
@@ -142,12 +149,15 @@ final class Main {
 			warmIt( warm,warmList);
 		}
 		if(shuffle) {
-			//Collections.shuffle(allQueries);
+			Collections.shuffle(allQueries);
 		}
+		tWorkloadDebut = System.currentTimeMillis();
 		parseQueries(createFileResult(output, resQ), queryResult,allQueries,Jena,data);
+		tWorkloadFin = System.currentTimeMillis();
+		tWorkloadTotal = tWorkloadFin-tWorkloadDebut;
 		
-		tempsFin = System.currentTimeMillis();
-		tTotal = (tempsFin - tempsDebut);
+		tTotalFin = System.currentTimeMillis();
+		tTotal = (tTotalFin - tTotalDebut);
 		
 		File outputFile = createFileResult(output, resOutput);
 		PrintWriter writerRes = new PrintWriter(outputFile);
@@ -155,7 +165,7 @@ final class Main {
 		
 		writerRes.write('\n');
 		
-		writerRes.write(data+','+output+','+nbLigneData(data)+','+allQueries.size()+','+tTotal+','+"temps lecture des requetes (ms)"+','+" temps création dico (ms) "+','+" nombre d’index"+','+"temps de création des index (ms)"+','+"temps total d’évaluation du workload (ms)"+','+"temps total (du début à la fin du programme) (ms)");
+		writerRes.write(data+','+output+','+nbLigneData(data)+','+allQueries.size()+','+"temps lecture des données (ms)"+','+tLectureReqTotal+','+" temps création dico (ms) "+','+"6"+','+"temps de création des index (ms)"+','+tWorkloadTotal+','+tTotal);
 		//mettre fichier data.len
 		writerRes.close();
 		

@@ -361,29 +361,34 @@ final class Main {
 		
 		int ok = 0;
 		int pasok = 0;
-
+		int cmptRep = 0;
 		Model model = modelData(data);
 		System.out.println("Jena :");
+		List<String> r = new ArrayList<String>();
 		for(ParsedQuery query: Queries) {
 			Set<String> myResult = new HashSet<String>();
 			Set<String> jenaResult = new HashSet<String>();
 			myResult.addAll(processAQuery2(query,writer,queryResult));
+			 r = processAQuery2(query,writer,queryResult);
+			cmptRep = cmptRep+r.size();
 			//System.out.println("myResult : "+myResult);// Traitement de la requete, a adapter/reecrire pour votre programme
-			
-			jenaResult.addAll(jenaQuery(queryForJena(query, data), model)) ;
+			if(Jena == true) {
+				jenaResult.addAll(jenaQuery(queryForJena(query, data), model)) ;
 				//System.out.println("jenaResult : "+jenaResult);
-			
-			if(myResult.equals(jenaResult)) {
-				ok++;
-			}else {
-				System.out.println("me : "+myResult);
-				System.out.println("jena"+ jenaResult);
-				pasok++;
+				if(myResult.equals(jenaResult)) {
+					ok++;
+				}else {
+					System.out.println("me : "+myResult);
+					System.out.println("jena"+ jenaResult);
+					pasok++;
+				}
 			}
+
+			
 		}
 		System.out.println("Validées : "+ok);
 		System.out.println("Non validées : "+pasok);
-
+		System.out.println("Compteur réponses : "+cmptRep);
 		writer.close();
 		if(!queryResult) {
 			file.delete();
